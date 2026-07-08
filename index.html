@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BOLÃO COPA 2026 — Winning Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --pitch:#1a6b2e; --pitch-dark:#0f4a1f; --pitch-line:#2e9147;
+    --sky1:#0a1a3f; --sky2:#1e3a8a;
+    --gold:#f5c542; --gold-dark:#c99a1f;
+    --chrome:#e8ecf3; --chrome-dark:#9aa4b8;
+    --red:#d62828; --blue:#1d4ed8;
+    --panel:#0c1836; --panel2:#152252;
+    --txt:#f4f7ff; --txt-dim:#a9b6d6;
+    --ok:#3ad06a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Chakra Petch',sans-serif;
+    background:
+      radial-gradient(circle at 50% -10%, #2a4bb0 0%, var(--sky1) 55%, #04081c 100%);
+    color:var(--txt); min-height:100vh; padding:0 0 40px;
+    -webkit-font-smoothing:none;
+  }
+  .scanlines{position:fixed; inset:0; pointer-events:none; z-index:100;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px, transparent 1px, transparent 3px);}
+  .pixel{font-family:'Press Start 2P',monospace;}
+
+  /* ===== COVER / CAPA ===== */
+  .cover{
+    position:relative; padding:34px 16px 26px; text-align:center; overflow:hidden;
+    border-bottom:4px solid var(--gold);
+    background:
+      linear-gradient(180deg, rgba(10,26,63,0.4), rgba(4,8,28,0.9)),
+      repeating-linear-gradient(90deg, var(--pitch) 0 42px, var(--pitch-dark) 42px 84px);
+  }
+  .cover::before{content:""; position:absolute; inset:0;
+    background:radial-gradient(ellipse at 50% 120%, rgba(245,197,66,0.25), transparent 60%);}
+  .cover .tag{position:relative; font-size:9px; letter-spacing:3px; color:var(--gold);
+    text-shadow:2px 2px 0 #000; margin-bottom:14px;}
+  .cover h1{position:relative; font-size:clamp(18px,6vw,34px); line-height:1.5;
+    color:#fff; text-shadow:3px 3px 0 var(--red), 6px 6px 0 rgba(0,0,0,0.5);
+    letter-spacing:1px;}
+  .cover h1 .yellow{color:var(--gold); text-shadow:3px 3px 0 #7a1010, 6px 6px 0 rgba(0,0,0,0.5);}
+  .cover .sub{position:relative; margin-top:16px; font-size:11px; letter-spacing:2px;
+    color:var(--chrome); text-shadow:1px 1px 0 #000;}
+  .trophy{font-size:30px; filter:drop-shadow(0 0 8px var(--gold)); margin-bottom:6px; display:inline-block;}
+  .ball-row{position:relative; margin-top:14px; font-size:16px; letter-spacing:6px;}
+
+  .wrap{max-width:620px; margin:0 auto; padding:0 14px;}
+
+  /* ===== USER BAR ===== */
+  .userbar{margin:18px 0; background:var(--panel); border:2px solid var(--chrome-dark);
+    border-radius:4px; padding:12px 14px; display:flex; gap:10px; align-items:center;
+    box-shadow:0 4px 0 rgba(0,0,0,0.5), inset 0 0 0 2px var(--panel2);}
+  .userbar label{font-size:10px; letter-spacing:1px; color:var(--gold); white-space:nowrap;}
+  .userbar input{flex:1; min-width:0;}
+  input, button{font-family:'Chakra Petch',sans-serif; font-weight:600;}
+  input[type=text], input[type=number]{
+    background:#050b22; border:2px solid var(--chrome-dark); color:#fff;
+    padding:9px 10px; border-radius:3px; font-size:14px; outline:none;}
+  input:focus{border-color:var(--gold);}
+  .btn{cursor:pointer; border:none; border-radius:3px; padding:10px 14px;
+    font-size:11px; letter-spacing:1px; font-weight:700; text-transform:uppercase;
+    background:linear-gradient(180deg,var(--gold),var(--gold-dark)); color:#3a2800;
+    box-shadow:0 4px 0 #7a5c10, 0 5px 6px rgba(0,0,0,0.4); transition:transform .05s;}
+  .btn:active{transform:translateY(3px); box-shadow:0 1px 0 #7a5c10;}
+  .btn.blue{background:linear-gradient(180deg,#3b82f6,#1d4ed8); color:#fff; box-shadow:0 4px 0 #12318f,0 5px 6px rgba(0,0,0,0.4);}
+  .btn.sm{padding:7px 10px; font-size:9px;}
+
+  /* ===== MATCH CARD ===== */
+  .match{background:var(--panel); border:2px solid var(--chrome-dark); border-radius:6px;
+    margin-bottom:18px; overflow:hidden; box-shadow:0 6px 0 rgba(0,0,0,0.5);}
+  .match-head{background:linear-gradient(180deg,var(--panel2),#0a1436);
+    padding:8px 12px; display:flex; justify-content:space-between; align-items:center;
+    border-bottom:2px solid var(--gold);}
+  .match-head .round{font-size:8px; letter-spacing:2px; color:var(--gold);}
+  .match-head .when{font-size:10px; color:var(--txt-dim);}
+
+  .scoreboard{display:flex; align-items:center; justify-content:center; gap:8px;
+    padding:16px 10px 6px; background:
+      linear-gradient(180deg, rgba(0,0,0,0.35), transparent),
+      repeating-linear-gradient(90deg, var(--pitch) 0 30px, var(--pitch-dark) 30px 60px);}
+  .team{flex:1; text-align:center;}
+  .flag{font-size:30px; line-height:1; filter:drop-shadow(2px 2px 0 rgba(0,0,0,0.6));}
+  .team .name{margin-top:5px; font-size:11px; letter-spacing:1px; font-weight:700; text-shadow:1px 1px 0 #000;}
+  .vs-box{background:#000; border:2px solid var(--gold); border-radius:3px; padding:6px 8px;
+    min-width:70px; text-align:center;}
+  .vs-box .vs{font-size:11px; color:var(--gold);}
+
+  .status{padding:8px 12px; text-align:center; font-size:10px; letter-spacing:1px;
+    border-top:1px dashed rgba(255,255,255,0.15); border-bottom:1px dashed rgba(255,255,255,0.15);}
+  .status .clock{font-size:16px; color:var(--gold); text-shadow:1px 1px 0 #000; display:block; margin-top:4px;}
+  .status.open{color:var(--ok);} .status.locked{color:var(--gold);} .status.revealed{color:var(--chrome);}
+
+  /* alcunha */
+  .alcunha-row{display:flex; align-items:center; gap:10px; padding:12px 12px 0;}
+  .alcunha-row label{font-size:9px; letter-spacing:2px; color:var(--gold); white-space:nowrap; text-shadow:1px 1px 0 #000;}
+  .alcunha-row .alc{flex:1; min-width:0; text-transform:uppercase;}
+
+  /* guess input */
+  .guess-in{padding:12px; display:flex; align-items:center; justify-content:center; gap:8px;}
+  .guess-in .sc{width:52px; text-align:center; font-size:20px; padding:8px 4px;}
+  .guess-in .x{color:var(--gold); font-weight:700;}
+  .guess-in .tnm{font-size:10px; color:var(--txt-dim); width:64px; text-align:center; letter-spacing:1px;}
+  .guess-actions{padding:0 12px 12px; text-align:center;}
+  .msg{font-size:10px; color:var(--gold); min-height:14px; margin-top:8px; letter-spacing:1px;}
+
+  /* list */
+  .glist{padding:6px 12px 14px;}
+  .glist .lhead{font-size:9px; letter-spacing:2px; color:var(--txt-dim); margin:8px 0 6px; text-transform:uppercase;}
+  .grow{display:flex; align-items:center; gap:10px; padding:8px 8px; border-radius:3px;
+    background:#0a132e; margin-bottom:4px; border-left:3px solid var(--chrome-dark);}
+  .grow .nk{font-size:13px; font-weight:600; flex:1;}
+  .grow .pv{font-family:'Press Start 2P',monospace; font-size:12px; color:var(--gold);}
+  .grow.locked .pv{color:var(--chrome-dark);}
+  .grow.hit{border-left-color:var(--ok); background:#0d2417;}
+  .grow.hit .pv{color:var(--ok);}
+  .badge{font-size:7px; letter-spacing:1px; background:var(--ok); color:#04240f;
+    padding:2px 5px; border-radius:2px; font-family:'Press Start 2P',monospace;}
+
+  .result-in{padding:10px 12px; background:#0a132e; border-top:2px solid var(--gold);}
+  .result-in .rlbl{font-size:9px; color:var(--gold); letter-spacing:2px; text-align:center; margin-bottom:8px;}
+  .share-row{display:flex; gap:8px; padding:10px 12px 14px; justify-content:center; flex-wrap:wrap;}
+  .btn.wpp{background:linear-gradient(180deg,#25d366,#128c3e); color:#04240f; box-shadow:0 4px 0 #0a5c26,0 5px 6px rgba(0,0,0,0.4);}
+
+  .foot{text-align:center; font-size:9px; color:var(--txt-dim); margin-top:24px; letter-spacing:1px; line-height:1.8;}
+  .foot .pixel{font-size:8px; color:var(--gold);}
+  .loading{text-align:center; padding:40px 0; color:var(--txt-dim); font-size:11px; letter-spacing:2px;}
+  .admin-toggle{text-align:center; margin-top:10px;}
+  .admin-toggle .btn{background:#1a2447; color:var(--txt-dim); box-shadow:0 3px 0 #0a1230;}
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<div class="cover">
+  <div class="tag pixel">★ FIFA WORLD CUP 2026 ★</div>
+  <span class="trophy">🏆</span>
+  <h1 class="pixel">BOLÃO <span class="yellow">COPA</span><br>QUARTAS DE FINAL</h1>
+  <div class="ball-row">⚽ 🥅 ⚽ 🥅 ⚽</div>
+  <div class="sub pixel">WINNING EDITION</div>
+</div>
+
+<div class="wrap">
+  <div id="board"><div class="loading pixel">CARREGANDO PARTIDAS...</div></div>
+
+  <div class="admin-toggle">
+    <button class="btn sm" id="adminBtn">⚙ MODO ADMIN (definir resultados)</button>
+    <button class="btn sm" id="retestBtn" style="display:none;">🔄 REINICIAR JOGO TESTE</button>
+  </div>
+
+  <div class="foot">
+    <span class="pixel">PRESS START</span><br>
+    Palpites travam 30 min antes · revelam 25 min antes<br>
+    Placar exato · relógio sincronizado pelo servidor
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, onValue, set, get, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+// ========================================================================
+//  >>> COLE AQUI A CONFIG DO SEU FIREBASE (instruções no chat) <<<
+// ========================================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyA1lUwazoJ__-vM2ceJncFEJe1l0AOCbvQ",
+  authDomain: "bolao-amigos-c6534.firebaseapp.com",
+  databaseURL: "https://bolao-amigos-c6534-default-rtdb.firebaseio.com",
+  projectId: "bolao-amigos-c6534",
+  storageBucket: "bolao-amigos-c6534.firebasestorage.app",
+  messagingSenderId: "1054127797755",
+  appId: "1:1054127797755:web:e288b1388d33220fb4475e",
+  measurementId: "G-R8NWRQK9DZ"
+};
+// ========================================================================
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+const LOCK_MIN = 30, REVEAL_MIN = 25;
+const ADMIN_PIN = "1010"; // troque se quiser
+
+// Partidas das quartas (horários em Brasília -03:00). Edite se precisar.
+const MATCHES = [
+  { id:"qf1", round:"QUARTAS · JOGO 1", a:"FRANÇA", b:"MARROCOS",     fa:"🇫🇷", fb:"🇲🇦", kickoff:"2026-07-09T17:00:00-03:00" },
+  { id:"qf2", round:"QUARTAS · JOGO 2", a:"ESPANHA", b:"BÉLGICA",     fa:"🇪🇸", fb:"🇧🇪", kickoff:"2026-07-10T16:00:00-03:00" },
+  { id:"qf3", round:"QUARTAS · JOGO 3", a:"NORUEGA", b:"INGLATERRA",  fa:"🇳🇴", fb:"🏴", kickoff:"2026-07-11T18:00:00-03:00" },
+  { id:"qf4", round:"QUARTAS · JOGO 4", a:"ARGENTINA", b:"SUÍÇA",     fa:"🇦🇷", fb:"🇨🇭", kickoff:"2026-07-11T22:00:00-03:00" },
+];
+
+let serverOffset = 0;        // diferença entre relógio do servidor e o local
+let guesses = {};            // { matchId: { nick: {a,b,ts} } }
+let results = {};            // { matchId: {a,b} }
+let adminMode = false;
+
+// ===== JOGO TESTE (simulação) =====
+// Deixe true para exibir um jogo de teste que "começa" 35 min após a 1ª carga.
+// Ciclo completo em ~10 min: 5 min aberto -> trava -> 5 min trancado -> revela.
+// O horário fica salvo no Firebase, então todos os aparelhos veem o MESMO timer.
+// Depois do teste: mude para false (e apague guesses/teste no Firebase, se quiser).
+const SHOW_TEST = true;
+const TEST_MATCH = { id:"teste", round:"⚡ JOGO TESTE · SIMULAÇÃO", a:"BRASIL", b:"NORUEGA", fa:"🇧🇷", fb:"🇳🇴", kickoff:null };
+// ==================================
+
+const $ = s => document.querySelector(s);
+const savedNick = () => localStorage.getItem('bolao_nick') || '';
+
+// hora "real" = local + offset do servidor
+function now(){ return Date.now() + serverOffset; }
+function kickMs(m){ return new Date(m.kickoff).getTime(); }
+function phaseOf(m){
+  const t = now(), k = kickMs(m);
+  if (t < k - LOCK_MIN*60000) return 'open';
+  if (t < k - REVEAL_MIN*60000) return 'locked';
+  return 'revealed';
+}
+function pad(n){ return String(n).padStart(2,'0'); }
+function fmtRemain(ms){ if(ms<0)ms=0; const s=Math.floor(ms/1000),h=Math.floor(s/3600),
+  m=Math.floor(s%3600/60),ss=s%60; return h>0?`${h}:${pad(m)}:${pad(ss)}`:`${pad(m)}:${pad(ss)}`; }
+function fmtWhen(m){ return new Date(m.kickoff).toLocaleString('pt-BR',
+  {weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+// ---- sincronizar relógio do servidor ----
+async function syncClock(){
+  try{
+    const r = ref(db, '.info/serverTimeOffset');
+    onValue(r, snap => { const off = snap.val(); if(typeof off==='number') serverOffset = off; });
+  }catch(e){ serverOffset = 0; }
+}
+
+// ---- ouvir dados ----
+function listen(){
+  onValue(ref(db,'guesses'), s => { guesses = s.val() || {}; render(); });
+  onValue(ref(db,'results'), s => { results = s.val() || {}; render(); });
+  if(SHOW_TEST){
+    onValue(ref(db,'testKickoff'), s => {
+      const tk = s.val();
+      if(tk){ TEST_MATCH.kickoff = new Date(tk).toISOString(); render(); }
+    });
+  }
+}
+
+// ---- enviar palpite ----
+async function submitGuess(m, nick, a, b, msgEl){
+  nick = (nick||'').trim();
+  if(!nick){ msgEl.textContent = '⚠ DIGITE SUA ALCUNHA'; return; }
+  if(a===''||b===''){ msgEl.textContent = '⚠ PREENCHA OS DOIS PLACARES'; return; }
+  if(phaseOf(m)!=='open'){ msgEl.textContent = '🔒 PALPITES JÁ TRANCADOS'; return; }
+  localStorage.setItem('bolao_nick', nick); // lembra a alcunha nos próximos cards
+  const key = nick.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+                  .toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_')
+                  .replace(/^_|_$/g,'').slice(0,20) || 'jogador';
+  try{
+    await set(ref(db, `guesses/${m.id}/${key}`), { nick, a:+a, b:+b, ts: serverTimestamp() });
+    msgEl.textContent = '✔ PALPITE SALVO! (editável até a trava)';
+  }catch(e){ msgEl.textContent = '⚠ ERRO AO SALVAR — VEJA CONEXÃO'; }
+}
+
+async function saveResult(m, a, b, msgEl){
+  if(a===''||b===''){ msgEl.textContent='⚠ PREENCHA O RESULTADO'; return; }
+  try{ await set(ref(db,`results/${m.id}`), {a:+a,b:+b}); msgEl.textContent='✔ RESULTADO SALVO'; }
+  catch(e){ msgEl.textContent='⚠ ERRO'; }
+}
+
+// ---- comprovante: monta os dados de um jogo ----
+function matchSummary(m){
+  const g = guesses[m.id] || {};
+  const list = Object.values(g).sort((x,y)=>(x.ts||0)-(y.ts||0));
+  const res = results[m.id];
+  return { list, res };
+}
+
+// ---- gerar PDF do jogo ----
+function genPDF(m){
+  const { list, res } = matchSummary(m);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit:'mm', format:'a4' });
+  const W = 210;
+  // cabeçalho
+  doc.setFillColor(12,24,54); doc.rect(0,0,W,32,'F');
+  doc.setFillColor(245,197,66); doc.rect(0,32,W,1.5,'F');
+  doc.setTextColor(245,197,66); doc.setFont('helvetica','bold'); doc.setFontSize(9);
+  doc.text('BOLAO COPA 2026 - QUARTAS DE FINAL', W/2, 12, {align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(15);
+  doc.text(`${m.a}  x  ${m.b}`, W/2, 22, {align:'center'});
+  doc.setFontSize(8); doc.setTextColor(180,190,210);
+  doc.text(fmtWhen(m).toUpperCase(), W/2, 29, {align:'center'});
+
+  let y = 44;
+  doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.setFontSize(11);
+  if(res){
+    doc.text(`RESULTADO OFICIAL: ${res.a} x ${res.b}`, W/2, y, {align:'center'}); y += 10;
+  }
+  // cabeçalho tabela
+  doc.setFillColor(230,236,243); doc.rect(20,y-5,W-40,8,'F');
+  doc.setFontSize(9); doc.setTextColor(60,60,60);
+  doc.text('ALCUNHA', 24, y); doc.text('PALPITE', 130, y); doc.text('STATUS', 165, y);
+  y += 6;
+  doc.setFont('helvetica','normal'); doc.setFontSize(10);
+  list.forEach((x,i)=>{
+    if(y > 275){ doc.addPage(); y = 20; }
+    const hit = res && res.a===x.a && res.b===x.b;
+    if(i%2===0){ doc.setFillColor(247,249,252); doc.rect(20,y-4.5,W-40,7,'F'); }
+    doc.setTextColor(20,20,20); doc.text(String(x.nick).slice(0,28), 24, y);
+    doc.text(`${x.a} x ${x.b}`, 130, y);
+    if(hit){ doc.setTextColor(30,150,60); doc.setFont('helvetica','bold'); doc.text('ACERTOU!', 165, y); doc.setFont('helvetica','normal'); }
+    else if(res){ doc.setTextColor(150,150,150); doc.text('-', 165, y); }
+    y += 7;
+  });
+  // rodapé
+  y += 6; doc.setDrawColor(200,200,200); doc.line(20,y,W-20,y); y += 6;
+  doc.setFontSize(8); doc.setTextColor(120,120,120);
+  doc.text(`${list.length} palpite(s) | Gerado em ${new Date().toLocaleString('pt-BR')}`, 20, y);
+  const fname = `bolao_${m.a}_x_${m.b}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]/g,'_');
+  doc.save(fname + '.pdf');
+}
+
+// ---- texto pro WhatsApp ----
+function genWhatsText(m){
+  const { list, res } = matchSummary(m);
+  let t = `🏆 *BOLÃO COPA 2026 — QUARTAS*\n`;
+  t += `⚽ *${m.a} x ${m.b}*\n`;
+  t += `📅 ${fmtWhen(m)}\n`;
+  if(res) t += `\n🥅 *RESULTADO: ${res.a} x ${res.b}*\n`;
+  t += `\n📋 *PALPITES (${list.length}):*\n`;
+  list.forEach(x=>{
+    const hit = res && res.a===x.a && res.b===x.b;
+    t += `${hit?'✅':'▪️'} ${x.nick}: ${x.a} x ${x.b}${hit?' 🎯 ACERTOU!':''}\n`;
+  });
+  return t;
+}
+function openWhats(m){
+  const url = 'https://wa.me/?text=' + encodeURIComponent(genWhatsText(m));
+  window.open(url, '_blank');
+}
+
+function allMatches(){
+  return (SHOW_TEST && TEST_MATCH.kickoff) ? [TEST_MATCH, ...MATCHES] : MATCHES;
+}
+
+// ---- render ----
+function render(){
+  const board = $('#board');
+  const ms = allMatches();
+  board.innerHTML = ms.map(m => matchCard(m)).join('');
+  // religar eventos
+  ms.forEach(m => wire(m));
+}
+
+function matchCard(m){
+  const ph = phaseOf(m);
+  const k = kickMs(m);
+  const g = guesses[m.id] || {};
+  const list = Object.values(g).sort((x,y)=>(x.ts||0)-(y.ts||0));
+  const res = results[m.id];
+
+  let status='';
+  if(ph==='open') status=`<div class="status open pixel">PALPITES ABERTOS · TRAVA EM<span class="clock" data-clock="lock" data-k="${k}">--:--</span></div>`;
+  else if(ph==='locked') status=`<div class="status locked pixel">🔒 TRANCADO · REVELA EM<span class="clock" data-clock="reveal" data-k="${k}">--:--</span></div>`;
+  else status=`<div class="status revealed pixel">✅ PALPITES REVELADOS</div>`;
+
+  // input de palpite (só na fase open)
+  let input='';
+  if(ph==='open'){
+    input=`<div class="alcunha-row">
+        <label class="pixel">ALCUNHA</label>
+        <input type="text" class="alc" id="nk_${m.id}" placeholder="seu apelido" maxlength="16" value="${esc(savedNick())}"/>
+      </div>
+      <div class="guess-in">
+        <span class="tnm">${esc(m.a)}</span>
+        <input class="sc" type="number" min="0" max="99" id="a_${m.id}" placeholder="0"/>
+        <span class="x">×</span>
+        <input class="sc" type="number" min="0" max="99" id="b_${m.id}" placeholder="0"/>
+        <span class="tnm">${esc(m.b)}</span>
+      </div>
+      <div class="guess-actions">
+        <button class="btn" id="send_${m.id}">ENVIAR PALPITE</button>
+        <div class="msg pixel" id="msg_${m.id}"></div>
+      </div>`;
+  }
+
+  // lista de palpites
+  let listHtml='';
+  if(list.length){
+    const reveal = ph==='revealed';
+    listHtml = `<div class="glist"><div class="lhead">${list.length} PALPITE(S)</div>` +
+      list.map(x=>{
+        if(!reveal){
+          return `<div class="grow locked"><span class="nk">${esc(x.nick)}</span><span class="pv">? × ?</span></div>`;
+        }
+        const hit = res && res.a===x.a && res.b===x.b;
+        return `<div class="grow ${hit?'hit':''}">
+          <span class="nk">${esc(x.nick)}</span>
+          ${hit?'<span class="badge">ACERTOU!</span>':''}
+          <span class="pv">${x.a} × ${x.b}</span></div>`;
+      }).join('') + `</div>`;
+  } else {
+    listHtml = `<div class="glist"><div class="lhead">nenhum palpite ainda</div></div>`;
+  }
+
+  // resultado oficial (revelado) + admin
+  let resultHtml='';
+  if(ph==='revealed'){
+    if(res){
+      resultHtml=`<div class="result-in"><div class="rlbl pixel">RESULTADO OFICIAL: ${res.a} × ${res.b}</div></div>`;
+    } else if(adminMode){
+      resultHtml=`<div class="result-in">
+        <div class="rlbl pixel">DEFINIR RESULTADO OFICIAL</div>
+        <div class="guess-in" style="padding:0 0 8px">
+          <input class="sc" type="number" min="0" max="99" id="ra_${m.id}" placeholder="0"/>
+          <span class="x">×</span>
+          <input class="sc" type="number" min="0" max="99" id="rb_${m.id}" placeholder="0"/>
+        </div>
+        <div style="text-align:center"><button class="btn blue sm" id="res_${m.id}">SALVAR RESULTADO</button>
+        <div class="msg pixel" id="rmsg_${m.id}"></div></div>
+      </div>`;
+    }
+    // botões de compartilhamento (só se houver palpites)
+    if(list.length){
+      resultHtml += `<div class="share-row">
+        <button class="btn sm" id="pdf_${m.id}">📄 BAIXAR PDF</button>
+        <button class="btn sm wpp" id="wpp_${m.id}">💬 ENVIAR NO WHATSAPP</button>
+      </div>`;
+    }
+  }
+
+  return `<div class="match">
+    <div class="match-head"><span class="round pixel">${m.round}</span><span class="when">${fmtWhen(m)}</span></div>
+    <div class="scoreboard">
+      <div class="team"><div class="flag">${m.fa}</div><div class="name">${esc(m.a)}</div></div>
+      <div class="vs-box"><div class="vs pixel">VS</div></div>
+      <div class="team"><div class="flag">${m.fb}</div><div class="name">${esc(m.b)}</div></div>
+    </div>
+    ${status}${input}${listHtml}${resultHtml}
+  </div>`;
+}
+
+function wire(m){
+  const send = $(`#send_${m.id}`);
+  if(send) send.onclick = ()=> submitGuess(m, $(`#nk_${m.id}`).value, $(`#a_${m.id}`).value, $(`#b_${m.id}`).value, $(`#msg_${m.id}`));
+  const res = $(`#res_${m.id}`);
+  if(res) res.onclick = ()=> saveResult(m, $(`#ra_${m.id}`).value, $(`#rb_${m.id}`).value, $(`#rmsg_${m.id}`));
+  const pdf = $(`#pdf_${m.id}`);
+  if(pdf) pdf.onclick = ()=> genPDF(m);
+  const wpp = $(`#wpp_${m.id}`);
+  if(wpp) wpp.onclick = ()=> openWhats(m);
+}
+
+// atualizar relógios a cada segundo sem re-render completo
+setInterval(()=>{
+  let needFull=false;
+  document.querySelectorAll('[data-clock]').forEach(el=>{
+    const k=+el.dataset.k, type=el.dataset.clock, t=now();
+    const target = type==='lock' ? k-LOCK_MIN*60000 : k-REVEAL_MIN*60000;
+    el.textContent = fmtRemain(target-t);
+    if(target-t<=0) needFull=true;
+  });
+  if(needFull) render();
+}, 1000);
+
+$('#adminBtn').onclick = ()=>{
+  if(adminMode){ adminMode=false; $('#adminBtn').textContent='⚙ MODO ADMIN (definir resultados)'; $('#retestBtn').style.display='none'; render(); return; }
+  const pin = prompt('PIN de admin:');
+  if(pin===ADMIN_PIN){ adminMode=true; $('#adminBtn').textContent='⚙ ADMIN ATIVO (clique p/ sair)'; if(SHOW_TEST) $('#retestBtn').style.display='inline-block'; render(); }
+  else if(pin!==null){ alert('PIN incorreto'); }
+};
+
+$('#retestBtn').onclick = async ()=>{
+  if(!confirm('Reiniciar o jogo teste? Isso apaga os palpites do teste e recomeça o timer (35 min).')) return;
+  try{
+    const tk = Date.now() + serverOffset + 35*60000;
+    await set(ref(db,'testKickoff'), tk);
+    await set(ref(db,'guesses/teste'), null);
+    await set(ref(db,'results/teste'), null);
+    TEST_MATCH.kickoff = new Date(tk).toISOString();
+    render();
+    alert('Jogo teste reiniciado! Novo início em 35 min.');
+  }catch(e){ alert('Erro ao reiniciar: verifique o Firebase.'); }
+};
+
+// boot
+await syncClock();
+if(SHOW_TEST){
+  try{
+    const snap = await get(ref(db,'testKickoff'));
+    let tk = snap.exists() ? snap.val() : null;
+    if(!tk){
+      tk = Date.now() + serverOffset + 35*60000; // começa em 35 min (hora do servidor)
+      await set(ref(db,'testKickoff'), tk);
+    }
+    TEST_MATCH.kickoff = new Date(tk).toISOString();
+  }catch(e){
+    // sem Firebase configurado ainda: usa horário local só pra visualizar
+    TEST_MATCH.kickoff = new Date(Date.now() + 35*60000).toISOString();
+  }
+}
+listen();
+render();
+</script>
+</body>
+</html>
