@@ -6,6 +6,7 @@
 <title>BOLÃO COPA 2026 — Winning Edition</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <style>
   :root{
     --pitch:#1a6b2e; --pitch-dark:#0f4a1f; --pitch-line:#2e9147;
@@ -85,7 +86,8 @@
       linear-gradient(180deg, rgba(0,0,0,0.35), transparent),
       repeating-linear-gradient(90deg, var(--pitch) 0 30px, var(--pitch-dark) 30px 60px);}
   .team{flex:1; text-align:center;}
-  .flag{font-size:30px; line-height:1; filter:drop-shadow(2px 2px 0 rgba(0,0,0,0.6));}
+  .flag{width:44px; height:30px; object-fit:cover; image-rendering:pixelated;
+    border:2px solid #fff; box-shadow:2px 2px 0 rgba(0,0,0,0.6); border-radius:2px;}
   .team .name{margin-top:5px; font-size:11px; letter-spacing:1px; font-weight:700; text-shadow:1px 1px 0 #000;}
   .vs-box{background:#000; border:2px solid var(--gold); border-radius:3px; padding:6px 8px;
     min-width:70px; text-align:center;}
@@ -188,10 +190,10 @@ const ADMIN_PIN = "1010"; // troque se quiser
 
 // Partidas das quartas (horários em Brasília -03:00). Edite se precisar.
 const MATCHES = [
-  { id:"qf1", round:"QUARTAS · JOGO 1", a:"FRANÇA", b:"MARROCOS",     fa:"🇫🇷", fb:"🇲🇦", kickoff:"2026-07-09T17:00:00-03:00" },
-  { id:"qf2", round:"QUARTAS · JOGO 2", a:"ESPANHA", b:"BÉLGICA",     fa:"🇪🇸", fb:"🇧🇪", kickoff:"2026-07-10T16:00:00-03:00" },
-  { id:"qf3", round:"QUARTAS · JOGO 3", a:"NORUEGA", b:"INGLATERRA",  fa:"🇳🇴", fb:"🏴", kickoff:"2026-07-11T18:00:00-03:00" },
-  { id:"qf4", round:"QUARTAS · JOGO 4", a:"ARGENTINA", b:"SUÍÇA",     fa:"🇦🇷", fb:"🇨🇭", kickoff:"2026-07-11T22:00:00-03:00" },
+  { id:"qf1", round:"QUARTAS · JOGO 1", a:"FRANÇA", b:"MARROCOS",     fa:"fr", fb:"ma", ea:"🇫🇷", eb:"🇲🇦", kickoff:"2026-07-09T17:00:00-03:00" },
+  { id:"qf2", round:"QUARTAS · JOGO 2", a:"ESPANHA", b:"BÉLGICA",     fa:"es", fb:"be", ea:"🇪🇸", eb:"🇧🇪", kickoff:"2026-07-10T16:00:00-03:00" },
+  { id:"qf3", round:"QUARTAS · JOGO 3", a:"NORUEGA", b:"INGLATERRA",  fa:"no", fb:"gb-eng", ea:"🇳🇴", eb:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", kickoff:"2026-07-11T18:00:00-03:00" },
+  { id:"qf4", round:"QUARTAS · JOGO 4", a:"ARGENTINA", b:"SUÍÇA",     fa:"ar", fb:"ch", ea:"🇦🇷", eb:"🇨🇭", kickoff:"2026-07-11T22:00:00-03:00" },
 ];
 
 let serverOffset = 0;        // diferença entre relógio do servidor e o local
@@ -205,7 +207,7 @@ let adminMode = false;
 // O horário fica salvo no Firebase, então todos os aparelhos veem o MESMO timer.
 // Depois do teste: mude para false (e apague guesses/teste no Firebase, se quiser).
 const SHOW_TEST = true;
-const TEST_MATCH = { id:"teste", round:"⚡ JOGO TESTE · SIMULAÇÃO", a:"BRASIL", b:"NORUEGA", fa:"🇧🇷", fb:"🇳🇴", kickoff:null };
+const TEST_MATCH = { id:"teste", round:"⚡ JOGO TESTE · SIMULAÇÃO", a:"BRASIL", b:"NORUEGA", fa:"br", fb:"no", ea:"🇧🇷", eb:"🇳🇴", kickoff:null };
 // ==================================
 
 const $ = s => document.querySelector(s);
@@ -277,64 +279,113 @@ function matchSummary(m){
   return { list, res };
 }
 
-// ---- gerar PDF do jogo ----
-function genPDF(m){
-  const { list, res } = matchSummary(m);
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit:'mm', format:'a4' });
-  const W = 210;
-  // cabeçalho
-  doc.setFillColor(12,24,54); doc.rect(0,0,W,32,'F');
-  doc.setFillColor(245,197,66); doc.rect(0,32,W,1.5,'F');
-  doc.setTextColor(245,197,66); doc.setFont('helvetica','bold'); doc.setFontSize(9);
-  doc.text('BOLAO COPA 2026 - QUARTAS DE FINAL', W/2, 12, {align:'center'});
-  doc.setTextColor(255,255,255); doc.setFontSize(15);
-  doc.text(`${m.a}  x  ${m.b}`, W/2, 22, {align:'center'});
-  doc.setFontSize(8); doc.setTextColor(180,190,210);
-  doc.text(fmtWhen(m).toUpperCase(), W/2, 29, {align:'center'});
-
-  let y = 44;
-  doc.setTextColor(20,20,20); doc.setFont('helvetica','bold'); doc.setFontSize(11);
-  if(res){
-    doc.text(`RESULTADO OFICIAL: ${res.a} x ${res.b}`, W/2, y, {align:'center'}); y += 10;
-  }
-  // cabeçalho tabela
-  doc.setFillColor(230,236,243); doc.rect(20,y-5,W-40,8,'F');
-  doc.setFontSize(9); doc.setTextColor(60,60,60);
-  doc.text('ALCUNHA', 24, y); doc.text('PALPITE', 130, y); doc.text('STATUS', 165, y);
-  y += 6;
-  doc.setFont('helvetica','normal'); doc.setFontSize(10);
-  list.forEach((x,i)=>{
-    if(y > 275){ doc.addPage(); y = 20; }
+// ---- gerar PDF do jogo (com a estética do site) ----
+function buildPdfNode(m, list, res){
+  const rows = list.map((x,i)=>{
     const hit = res && res.a===x.a && res.b===x.b;
-    if(i%2===0){ doc.setFillColor(247,249,252); doc.rect(20,y-4.5,W-40,7,'F'); }
-    doc.setTextColor(20,20,20); doc.text(String(x.nick).slice(0,28), 24, y);
-    doc.text(`${x.a} x ${x.b}`, 130, y);
-    if(hit){ doc.setTextColor(30,150,60); doc.setFont('helvetica','bold'); doc.text('ACERTOU!', 165, y); doc.setFont('helvetica','normal'); }
-    else if(res){ doc.setTextColor(150,150,150); doc.text('-', 165, y); }
-    y += 7;
-  });
-  // rodapé
-  y += 6; doc.setDrawColor(200,200,200); doc.line(20,y,W-20,y); y += 6;
-  doc.setFontSize(8); doc.setTextColor(120,120,120);
-  doc.text(`${list.length} palpite(s) | Gerado em ${new Date().toLocaleString('pt-BR')}`, 20, y);
-  const fname = `bolao_${m.a}_x_${m.b}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]/g,'_');
-  doc.save(fname + '.pdf');
+    return `<div style="display:flex;align-items:center;gap:12px;padding:9px 14px;
+      background:${hit?'#0d2417':(i%2===0?'#0a132e':'#0e1a3d')};
+      border-left:4px solid ${hit?'#3ad06a':'#9aa4b8'};margin-bottom:4px;border-radius:3px;">
+      <span style="font-size:15px;font-weight:600;color:#f4f7ff;flex:1;">${esc(x.nick)}</span>
+      ${hit?`<span style="font-family:'Press Start 2P',monospace;font-size:8px;background:#3ad06a;color:#04240f;padding:3px 6px;border-radius:2px;">ACERTOU!</span>`:''}
+      <span style="font-family:'Press Start 2P',monospace;font-size:13px;color:${hit?'#3ad06a':'#f5c542'};">${x.a} × ${x.b}</span>
+    </div>`;
+  }).join('');
+  const node = document.createElement('div');
+  node.style.cssText = 'position:fixed;left:-9999px;top:0;width:700px;';
+  node.innerHTML = `
+  <div style="font-family:'Chakra Petch',sans-serif;background:#0c1836;border:3px solid #9aa4b8;border-radius:8px;overflow:hidden;">
+    <div style="padding:26px 20px 20px;text-align:center;border-bottom:4px solid #f5c542;
+      background:linear-gradient(180deg,rgba(10,26,63,0.55),rgba(4,8,28,0.92)),
+      repeating-linear-gradient(90deg,#1a6b2e 0 42px,#0f4a1f 42px 84px);">
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:3px;color:#f5c542;text-shadow:2px 2px 0 #000;margin-bottom:12px;">★ BOLÃO COPA 2026 · ${esc(m.round)} ★</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:18px;margin:10px 0;">
+        <div style="text-align:center;">
+          <img crossorigin="anonymous" src="https://flagcdn.com/w80/${m.fa}.png" style="width:64px;height:43px;object-fit:cover;border:2px solid #fff;box-shadow:3px 3px 0 rgba(0,0,0,0.6);border-radius:2px;"/>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-top:6px;text-shadow:1px 1px 0 #000;">${esc(m.a)}</div>
+        </div>
+        <div style="background:#000;border:2px solid #f5c542;border-radius:3px;padding:10px 12px;">
+          <span style="font-family:'Press Start 2P',monospace;font-size:${res?'16px':'12px'};color:#f5c542;">${res?`${res.a} × ${res.b}`:'VS'}</span>
+        </div>
+        <div style="text-align:center;">
+          <img crossorigin="anonymous" src="https://flagcdn.com/w80/${m.fb}.png" style="width:64px;height:43px;object-fit:cover;border:2px solid #fff;box-shadow:3px 3px 0 rgba(0,0,0,0.6);border-radius:2px;"/>
+          <div style="font-size:13px;font-weight:700;color:#fff;margin-top:6px;text-shadow:1px 1px 0 #000;">${esc(m.b)}</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#a9b6d6;letter-spacing:1px;">${fmtWhen(m).toUpperCase()}${res?' · RESULTADO OFICIAL':''}</div>
+    </div>
+    <div style="padding:16px 18px 8px;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;letter-spacing:2px;color:#a9b6d6;margin-bottom:10px;">${list.length} PALPITE(S)</div>
+      ${rows}
+    </div>
+    <div style="padding:10px 18px 16px;text-align:center;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#f5c542;letter-spacing:2px;">WINNING EDITION</div>
+      <div style="font-size:10px;color:#6b7694;margin-top:5px;">Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+    </div>
+  </div>`;
+  return node;
+}
+
+async function genPDF(m, btn){
+  const { list, res } = matchSummary(m);
+  if(btn){ btn.disabled = true; btn.textContent = '⏳ GERANDO...'; }
+  const node = buildPdfNode(m, list, res);
+  document.body.appendChild(node);
+  try{
+    // esperar bandeiras carregarem
+    await Promise.all([...node.querySelectorAll('img')].map(img =>
+      img.decode().catch(()=>{})));
+    const canvas = await html2canvas(node.firstElementChild, { useCORS:true, backgroundColor:'#0c1836', scale:2 });
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit:'mm', format:'a4' });
+    const margin = 12, w = 210 - margin*2, pageH = 297 - margin*2;
+    const pxPerMm = canvas.width / w;
+    const totalH = canvas.height / pxPerMm;
+    if(totalH <= pageH){
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin, w, totalH);
+    } else {
+      // fatiar em páginas
+      const pagePx = Math.floor(pageH * pxPerMm);
+      const slice = document.createElement('canvas');
+      const ctx = slice.getContext('2d');
+      let y = 0, first = true;
+      while(y < canvas.height){
+        const h = Math.min(pagePx, canvas.height - y);
+        slice.width = canvas.width; slice.height = h;
+        ctx.fillStyle = '#0c1836'; ctx.fillRect(0,0,slice.width,h);
+        ctx.drawImage(canvas, 0, y, canvas.width, h, 0, 0, canvas.width, h);
+        if(!first) pdf.addPage();
+        pdf.addImage(slice.toDataURL('image/png'), 'PNG', margin, margin, w, h/pxPerMm);
+        first = false; y += h;
+      }
+    }
+    const fname = `bolao_${m.a}_x_${m.b}`.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]/g,'_');
+    pdf.save(fname + '.pdf');
+  }catch(e){
+    alert('Erro ao gerar PDF: ' + e.message);
+  }finally{
+    node.remove();
+    if(btn){ btn.disabled = false; btn.textContent = '📄 BAIXAR PDF'; }
+  }
 }
 
 // ---- texto pro WhatsApp ----
 function genWhatsText(m){
   const { list, res } = matchSummary(m);
-  let t = `🏆 *BOLÃO COPA 2026 — QUARTAS*\n`;
-  t += `⚽ *${m.a} x ${m.b}*\n`;
-  t += `📅 ${fmtWhen(m)}\n`;
-  if(res) t += `\n🥅 *RESULTADO: ${res.a} x ${res.b}*\n`;
-  t += `\n📋 *PALPITES (${list.length}):*\n`;
+  const L = [];
+  L.push('🏆 *BOLÃO COPA 2026*');
+  L.push(`${m.ea||'⚽'} *${m.a} × ${m.b}* ${m.eb||'⚽'}`);
+  L.push(`📅 ${fmtWhen(m)}`);
+  if(res) L.push(`🥅 Resultado: *${res.a} × ${res.b}*`);
+  L.push('');
+  L.push(`📋 *Palpites (${list.length}):*`);
   list.forEach(x=>{
     const hit = res && res.a===x.a && res.b===x.b;
-    t += `${hit?'✅':'▪️'} ${x.nick}: ${x.a} x ${x.b}${hit?' 🎯 ACERTOU!':''}\n`;
+    L.push(`${hit?'🎯':'▪️'} ${x.nick} — *${x.a} × ${x.b}*${hit?' ✅':''}`);
   });
-  return t;
+  L.push('');
+  L.push('_Winning Edition_ 🎮');
+  return L.join('\n');
 }
 function openWhats(m){
   const url = 'https://wa.me/?text=' + encodeURIComponent(genWhatsText(m));
@@ -434,9 +485,9 @@ function matchCard(m){
   return `<div class="match">
     <div class="match-head"><span class="round pixel">${m.round}</span><span class="when">${fmtWhen(m)}</span></div>
     <div class="scoreboard">
-      <div class="team"><div class="flag">${m.fa}</div><div class="name">${esc(m.a)}</div></div>
+      <div class="team"><img class="flag" src="https://flagcdn.com/w80/${m.fa}.png" alt="${esc(m.a)}" onerror="this.style.display='none'"/><div class="name">${esc(m.a)}</div></div>
       <div class="vs-box"><div class="vs pixel">VS</div></div>
-      <div class="team"><div class="flag">${m.fb}</div><div class="name">${esc(m.b)}</div></div>
+      <div class="team"><img class="flag" src="https://flagcdn.com/w80/${m.fb}.png" alt="${esc(m.b)}" onerror="this.style.display='none'"/><div class="name">${esc(m.b)}</div></div>
     </div>
     ${status}${input}${listHtml}${resultHtml}
   </div>`;
@@ -448,7 +499,7 @@ function wire(m){
   const res = $(`#res_${m.id}`);
   if(res) res.onclick = ()=> saveResult(m, $(`#ra_${m.id}`).value, $(`#rb_${m.id}`).value, $(`#rmsg_${m.id}`));
   const pdf = $(`#pdf_${m.id}`);
-  if(pdf) pdf.onclick = ()=> genPDF(m);
+  if(pdf) pdf.onclick = ()=> genPDF(m, pdf);
   const wpp = $(`#wpp_${m.id}`);
   if(wpp) wpp.onclick = ()=> openWhats(m);
 }
