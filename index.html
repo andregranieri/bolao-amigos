@@ -129,6 +129,29 @@
   .share-row{display:flex; gap:8px; padding:10px 12px 14px; justify-content:center; flex-wrap:wrap;}
   .btn.wpp{background:linear-gradient(180deg,#25d366,#128c3e); color:#04240f; box-shadow:0 4px 0 #0a5c26,0 5px 6px rgba(0,0,0,0.4);}
 
+  /* ===== RANKING ===== */
+  .rank-card{background:var(--panel); border:2px solid var(--gold); border-radius:6px;
+    margin:18px 0; overflow:hidden; box-shadow:0 6px 0 rgba(0,0,0,0.5);}
+  .rank-head{background:linear-gradient(180deg,var(--panel2),#0a1436); padding:10px 12px;
+    font-size:10px; letter-spacing:2px; color:var(--gold); text-align:center;
+    border-bottom:2px solid var(--gold); text-shadow:1px 1px 0 #000;}
+  .rank-scroll{overflow-x:auto;}
+  .rank-table{width:100%; border-collapse:collapse; font-size:12px;}
+  .rank-table th{font-size:8px; font-family:'Press Start 2P',monospace; color:var(--txt-dim);
+    padding:8px 6px; letter-spacing:1px; border-bottom:1px solid var(--chrome-dark); text-align:center; white-space:nowrap;}
+  .rank-table td{padding:7px 6px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.07); color:var(--txt);}
+  .rank-table .tl{text-align:left; padding-left:10px;}
+  .rank-table .nm{font-weight:600; font-size:13px; white-space:nowrap;}
+  .rank-table .pos{font-size:10px; color:var(--gold);}
+  .rank-table .pts{font-size:12px; color:var(--gold);}
+  .rank-table tr.lead td{background:rgba(245,197,66,0.10);}
+  .rank-table tr.lead .pos::after{content:' 👑'; font-size:10px;}
+  .rank-table .guest{color:var(--txt-dim);}
+  .rank-foot{font-size:9px; color:var(--txt-dim); padding:8px 12px; text-align:center; letter-spacing:0.5px;}
+  .pts-chip{font-family:'Press Start 2P',monospace; font-size:9px; color:#04240f;
+    background:var(--gold); border-radius:2px; padding:2px 5px; margin-left:6px;}
+  .grow.hit .pts-chip{background:var(--ok);}
+
   .foot{text-align:center; font-size:9px; color:var(--txt-dim); margin-top:24px; letter-spacing:1px; line-height:1.8;}
   .foot .pixel{font-size:8px; color:var(--gold);}
   .loading{text-align:center; padding:40px 0; color:var(--txt-dim); font-size:11px; letter-spacing:2px;}
@@ -148,6 +171,8 @@
 </div>
 
 <div class="wrap">
+  <div id="ranking"></div>
+
   <div id="board"><div class="loading pixel">CARREGANDO PARTIDAS...</div></div>
 
   <div class="admin-toggle">
@@ -188,12 +213,46 @@ const db = getDatabase(app);
 const LOCK_MIN = 30, REVEAL_MIN = 25;
 const ADMIN_PIN = "1010"; // troque se quiser
 
+// ===================== SISTEMA DE PONTUAÇÃO =====================
+// Placar exato: 5 pts (absorve tudo)
+// Empate acertado com placar errado: 3 pts (absorve ponto de gols)
+// Acertou vencedor com placar errado: 2 pts (+1 se acertou gols de um time)
+// Acertou gols de 1 time e errou o resto: 1 pt
+// Errou tudo: 0
+// Jogo bônus (bonus:true nos MATCHES): pontos x2; critérios de desempate valem pelo base.
+// Critérios de desempate (ordem): Ex.BRA > Ex.Geral > Ac.Venc > Ac.Emp > divide o prêmio.
+// Sem palpite: 0 pts e nada conta para critérios.
+// Prorrogação: lançar o placar do fim dos 30 min extras. Pênaltis não contam.
+
+// PARTICIPANTES OFICIAIS + SALDO ACUMULADO (fases anteriores).
+// >>> PREENCHA com os valores atuais do bolão de vocês <<<
+// pts = pontos totais | exBra = placares exatos em jogos do Brasil |
+// exGeral = placares exatos no geral | acVenc = acertos de vencedor | acEmp = acertos de empate
+const SALDO_INICIAL = {
+  "Moeção":     { pts:300, exBra:1, exGeral:14, acVenc:62, acEmp:3 },
+  "Cantarelli": { pts:292, exBra:2, exGeral:15, acVenc:59, acEmp:4 },
+  "Soneca":     { pts:283, exBra:2, exGeral:15, acVenc:58, acEmp:4 },
+  "Lepo Lepo":  { pts:283, exBra:2, exGeral:12, acVenc:60, acEmp:2 },
+  "Georges":    { pts:277, exBra:1, exGeral:12, acVenc:62, acEmp:3 },
+  "Renato":     { pts:272, exBra:2, exGeral:13, acVenc:57, acEmp:3 },
+  "Samuel":     { pts:272, exBra:0, exGeral:11, acVenc:61, acEmp:2 },
+  "Cabral":     { pts:270, exBra:2, exGeral:9,  acVenc:63, acEmp:2 },
+  "Marcos":     { pts:270, exBra:0, exGeral:10, acVenc:60, acEmp:2 },
+  "Biriba":     { pts:262, exBra:1, exGeral:11, acVenc:56, acEmp:3 },
+  "Dedé":       { pts:257, exBra:1, exGeral:8,  acVenc:58, acEmp:0 },
+  "Aurélio":    { pts:245, exBra:1, exGeral:7,  acVenc:53, acEmp:1 },
+  "Adones":     { pts:211, exBra:0, exGeral:5,  acVenc:48, acEmp:3 },
+};
+// =================================================================
+
 // Partidas das quartas (horários em Brasília -03:00). Edite se precisar.
+// Partidas das quartas (horários em Brasília -03:00). Edite se precisar.
+// bonus:true dobra a pontuação do jogo (jogo ★). Troque conforme a regra do grupo.
 const MATCHES = [
-  { id:"qf1", round:"QUARTAS · JOGO 1", a:"FRANÇA", b:"MARROCOS",     fa:"fr", fb:"ma", ea:"🇫🇷", eb:"🇲🇦", kickoff:"2026-07-09T17:00:00-03:00" },
-  { id:"qf2", round:"QUARTAS · JOGO 2", a:"ESPANHA", b:"BÉLGICA",     fa:"es", fb:"be", ea:"🇪🇸", eb:"🇧🇪", kickoff:"2026-07-10T16:00:00-03:00" },
-  { id:"qf3", round:"QUARTAS · JOGO 3", a:"NORUEGA", b:"INGLATERRA",  fa:"no", fb:"gb-eng", ea:"🇳🇴", eb:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", kickoff:"2026-07-11T18:00:00-03:00" },
-  { id:"qf4", round:"QUARTAS · JOGO 4", a:"ARGENTINA", b:"SUÍÇA",     fa:"ar", fb:"ch", ea:"🇦🇷", eb:"🇨🇭", kickoff:"2026-07-11T22:00:00-03:00" },
+  { id:"qf1", round:"QUARTAS · JOGO 1", a:"FRANÇA", b:"MARROCOS",     fa:"fr", fb:"ma", ea:"🇫🇷", eb:"🇲🇦", bonus:false, kickoff:"2026-07-09T17:00:00-03:00" },
+  { id:"qf2", round:"QUARTAS · JOGO 2", a:"ESPANHA", b:"BÉLGICA",     fa:"es", fb:"be", ea:"🇪🇸", eb:"🇧🇪", bonus:false, kickoff:"2026-07-10T16:00:00-03:00" },
+  { id:"qf3", round:"QUARTAS · JOGO 3", a:"NORUEGA", b:"INGLATERRA",  fa:"no", fb:"gb-eng", ea:"🇳🇴", eb:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", bonus:false, kickoff:"2026-07-11T18:00:00-03:00" },
+  { id:"qf4", round:"QUARTAS · JOGO 4", a:"ARGENTINA", b:"SUÍÇA",     fa:"ar", fb:"ch", ea:"🇦🇷", eb:"🇨🇭", bonus:false, kickoff:"2026-07-11T22:00:00-03:00" },
 ];
 
 let serverOffset = 0;        // diferença entre relógio do servidor e o local
@@ -206,7 +265,7 @@ let adminMode = false;
 // Ciclo completo em ~10 min: 5 min aberto -> trava -> 5 min trancado -> revela.
 // O horário fica salvo no Firebase, então todos os aparelhos veem o MESMO timer.
 // Depois do teste: mude para false (e apague guesses/teste no Firebase, se quiser).
-const SHOW_TEST = false;
+const SHOW_TEST = true;
 const TEST_MATCH = { id:"teste", round:"⚡ JOGO TESTE · SIMULAÇÃO", a:"BRASIL", b:"NORUEGA", fa:"br", fb:"no", ea:"🇧🇷", eb:"🇳🇴", kickoff:null };
 // ==================================
 
@@ -256,9 +315,7 @@ async function submitGuess(m, nick, a, b, msgEl){
   if(a===''||b===''){ msgEl.textContent = '⚠ PREENCHA OS DOIS PLACARES'; return; }
   if(phaseOf(m)!=='open'){ msgEl.textContent = '🔒 PALPITES JÁ TRANCADOS'; return; }
   localStorage.setItem('bolao_nick', nick); // lembra a alcunha nos próximos cards
-  const key = nick.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-                  .toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_')
-                  .replace(/^_|_$/g,'').slice(0,20) || 'jogador';
+  const key = normKey(nick);
   try{
     await set(ref(db, `guesses/${m.id}/${key}`), { nick, a:+a, b:+b, ts: serverTimestamp() });
     msgEl.textContent = '✔ PALPITE SALVO! (editável até a trava)';
@@ -271,7 +328,106 @@ async function saveResult(m, a, b, msgEl){
   catch(e){ msgEl.textContent='⚠ ERRO'; }
 }
 
-// ---- comprovante: monta os dados de um jogo ----
+// ---- normalização de alcunha (identidade única) ----
+function normKey(nick){
+  return String(nick).normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_')
+    .replace(/^_|_$/g,'').slice(0,20) || 'jogador';
+}
+
+// ---- PONTUAÇÃO: calcula pontos e critérios de um palpite ----
+// Retorna { pts (já com bônus), base, exact, venc, emp }
+function scoreGuess(guess, res, match){
+  const gA=+guess.a, gB=+guess.b, rA=+res.a, rB=+res.b;
+  const gOut = gA>gB ? 'A' : (gB>gA ? 'B' : 'D'); // resultado do palpite
+  const rOut = rA>rB ? 'A' : (rB>rA ? 'B' : 'D'); // resultado oficial
+  const exact = (gA===rA && gB===rB);
+  const golHit = (gA===rA || gB===rB); // acertou gols de ao menos 1 time
+  let base=0, venc=0, emp=0;
+
+  if(exact){
+    base = 5;                              // absorve tudo
+    if(rOut==='D') emp=1; else venc=1;
+  } else if(rOut==='D' && gOut==='D'){
+    base = 3;                              // empate certo, placar errado (absorve gols)
+    emp = 1;
+  } else if(gOut===rOut){
+    base = 2 + (golHit ? 1 : 0);           // vencedor certo + eventual ponto de gols
+    venc = 1;
+  } else {
+    base = golHit ? 1 : 0;                 // só ponto de gols, ou nada
+  }
+  const pts = match.bonus ? base*2 : base; // bônus dobra pontos; critérios ficam no base
+  return { pts, base, exact, venc, emp };
+}
+
+function isBrazilMatch(m){ return m.a==='BRASIL' || m.b==='BRASIL'; }
+
+// ---- RANKING: saldo inicial + todos os jogos com resultado ----
+function computeRanking(){
+  const players = {};
+  for(const [nick, s] of Object.entries(SALDO_INICIAL)){
+    players[normKey(nick)] = { nick, official:true, pts:s.pts, exBra:s.exBra, exGeral:s.exGeral, acVenc:s.acVenc, acEmp:s.acEmp };
+  }
+  for(const m of MATCHES){                 // jogo teste NÃO conta pro ranking
+    const res = results[m.id]; if(!res) continue;
+    const g = guesses[m.id] || {};
+    for(const [k,x] of Object.entries(g)){
+      if(!players[k]) players[k] = { nick:x.nick, official:false, pts:0, exBra:0, exGeral:0, acVenc:0, acEmp:0 };
+      const s = scoreGuess(x, res, m);
+      const p = players[k];
+      p.pts += s.pts;
+      if(s.exact){ p.exGeral += 1; if(isBrazilMatch(m)) p.exBra += 1; }
+      p.acVenc += s.venc;
+      p.acEmp += s.emp;
+    }
+  }
+  const arr = Object.values(players);
+  // ordem: pts > Ex.BRA > Ex.Geral > Ac.Venc > Ac.Emp (empate total = divide prêmio)
+  arr.sort((a,b)=> b.pts-a.pts || b.exBra-a.exBra || b.exGeral-a.exGeral || b.acVenc-a.acVenc || b.acEmp-a.acEmp || a.nick.localeCompare(b.nick,'pt'));
+  // posições com empate real compartilhado
+  let pos=0, prev=null;
+  arr.forEach((p,i)=>{
+    const sig = [p.pts,p.exBra,p.exGeral,p.acVenc,p.acEmp].join('|');
+    if(sig!==prev){ pos=i+1; prev=sig; }
+    p.pos = pos;
+  });
+  return arr;
+}
+
+function renderRanking(){
+  const el = $('#ranking');
+  if(!el) return;
+  const arr = computeRanking();
+  if(!arr.length){ el.innerHTML=''; return; }
+  const hasTie = arr.some((p,i)=> i>0 && p.pos===arr[i-1].pos);
+  el.innerHTML = `
+  <div class="rank-card">
+    <div class="rank-head pixel">🏆 CLASSIFICAÇÃO GERAL</div>
+    <div class="rank-scroll">
+    <table class="rank-table">
+      <thead><tr>
+        <th>#</th><th class="tl">JOGADOR</th><th>PTS</th>
+        <th title="Placares exatos em jogos do Brasil">Ex.BRA</th>
+        <th title="Placares exatos no geral">Ex.G</th>
+        <th title="Acertos de vencedor">Ac.V</th>
+        <th title="Acertos de empate">Ac.E</th>
+      </tr></thead>
+      <tbody>
+      ${arr.map(p=>`<tr class="${p.pos===1?'lead':''}">
+        <td class="pos pixel">${p.pos}</td>
+        <td class="tl nm">${esc(p.nick)}${p.official?'':' <span class="guest">*</span>'}</td>
+        <td class="pts pixel">${p.pts}</td>
+        <td>${p.exBra}</td><td>${p.exGeral}</td><td>${p.acVenc}</td><td>${p.acEmp}</td>
+      </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>
+    <div class="rank-foot">Desempate: Ex.BRA → Ex.Geral → Ac.Venc → Ac.Emp → divide o prêmio${hasTie?' · há posições empatadas':''}${arr.some(p=>!p.official)?' · * fora da lista oficial':''}</div>
+  </div>`;
+}
+
+
 function matchSummary(m){
   const g = guesses[m.id] || {};
   const list = Object.values(g).sort((x,y)=>(x.ts||0)-(y.ts||0));
@@ -282,12 +438,14 @@ function matchSummary(m){
 // ---- gerar PDF do jogo (com a estética do site) ----
 function buildPdfNode(m, list, res){
   const rows = list.map((x,i)=>{
-    const hit = res && res.a===x.a && res.b===x.b;
+    const s = res ? scoreGuess(x, res, m) : null;
+    const hit = s && s.exact;
     return `<div style="display:flex;align-items:center;gap:12px;padding:9px 14px;
       background:${hit?'#0d2417':(i%2===0?'#0a132e':'#0e1a3d')};
       border-left:4px solid ${hit?'#3ad06a':'#9aa4b8'};margin-bottom:4px;border-radius:3px;">
       <span style="font-size:15px;font-weight:600;color:#f4f7ff;flex:1;">${esc(x.nick)}</span>
       ${hit?`<span style="font-family:'Press Start 2P',monospace;font-size:8px;background:#3ad06a;color:#04240f;padding:3px 6px;border-radius:2px;">ACERTOU!</span>`:''}
+      ${s?`<span style="font-family:'Press Start 2P',monospace;font-size:9px;background:${hit?'#3ad06a':'#f5c542'};color:#04240f;padding:3px 6px;border-radius:2px;">+${s.pts}</span>`:''}
       <span style="font-family:'Press Start 2P',monospace;font-size:13px;color:${hit?'#3ad06a':'#f5c542'};">${x.a} × ${x.b}</span>
     </div>`;
   }).join('');
@@ -380,9 +538,11 @@ function genWhatsText(m){
   L.push('');
   L.push(`📋 *Palpites (${list.length}):*`);
   list.forEach(x=>{
-    const hit = res && res.a===x.a && res.b===x.b;
-    L.push(`${hit?'🎯':'▪️'} ${x.nick} — *${x.a} × ${x.b}*${hit?' ✅':''}`);
+    const s = res ? scoreGuess(x, res, m) : null;
+    const hit = s && s.exact;
+    L.push(`${hit?'🎯':'▪️'} ${x.nick} — *${x.a} × ${x.b}*${s?` (+${s.pts} pt${s.pts===1?'':'s'})`:''}`);
   });
+  if(m.bonus) L.push('⭐ _Jogo bônus: pontos em dobro!_');
   L.push('');
   L.push('_Winning Edition_ 🎮');
   return L.join('\n');
@@ -403,6 +563,7 @@ function render(){
   board.innerHTML = ms.map(m => matchCard(m)).join('');
   // religar eventos
   ms.forEach(m => wire(m));
+  renderRanking();
 }
 
 function matchCard(m){
@@ -446,11 +607,13 @@ function matchCard(m){
         if(!reveal){
           return `<div class="grow locked"><span class="nk">${esc(x.nick)}</span><span class="pv">? × ?</span></div>`;
         }
-        const hit = res && res.a===x.a && res.b===x.b;
+        const s = res ? scoreGuess(x, res, m) : null;
+        const hit = s && s.exact;
         return `<div class="grow ${hit?'hit':''}">
           <span class="nk">${esc(x.nick)}</span>
           ${hit?'<span class="badge">ACERTOU!</span>':''}
-          <span class="pv">${x.a} × ${x.b}</span></div>`;
+          <span class="pv">${x.a} × ${x.b}</span>
+          ${s?`<span class="pts-chip">+${s.pts}</span>`:''}</div>`;
       }).join('') + `</div>`;
   } else {
     listHtml = `<div class="glist"><div class="lhead">nenhum palpite ainda</div></div>`;
@@ -483,7 +646,7 @@ function matchCard(m){
   }
 
   return `<div class="match">
-    <div class="match-head"><span class="round pixel">${m.round}</span><span class="when">${fmtWhen(m)}</span></div>
+    <div class="match-head"><span class="round pixel">${m.round}${m.bonus?' ★ BÔNUS 2X':''}</span><span class="when">${fmtWhen(m)}</span></div>
     <div class="scoreboard">
       <div class="team"><img class="flag" src="https://flagcdn.com/w80/${m.fa}.png" alt="${esc(m.a)}" onerror="this.style.display='none'"/><div class="name">${esc(m.a)}</div></div>
       <div class="vs-box"><div class="vs pixel">VS</div></div>
