@@ -165,9 +165,9 @@
 <div class="cover">
   <div class="tag pixel">★ FIFA WORLD CUP 2026 ★</div>
   <span class="trophy">🏆</span>
-  <h1 class="pixel">BOLÃO <span class="yellow">COPA</span><br>QUARTAS DE FINAL</h1>
+  <h1 class="pixel">BOLÃO <span class="yellow">COPA</span><br>SEMIFINAIS</h1>
   <div class="ball-row">⚽ 🥅 ⚽ 🥅 ⚽</div>
-  <div class="sub pixel">WINNING EDITION</div>
+  <div class="sub pixel">RETA FINAL · WINNING EDITION</div>
 </div>
 
 <div class="wrap">
@@ -229,19 +229,19 @@ const ADMIN_PIN = "1010"; // troque se quiser
 // pts = pontos totais | exBra = placares exatos em jogos do Brasil |
 // exGeral = placares exatos no geral | acVenc = acertos de vencedor | acEmp = acertos de empate
 const SALDO_INICIAL = {
-  "Moeção":     { pts:300, exBra:1, exGeral:14, acVenc:62, acEmp:3 },
-  "Cantarelli": { pts:292, exBra:2, exGeral:15, acVenc:59, acEmp:4 },
-  "Soneca":     { pts:283, exBra:2, exGeral:15, acVenc:58, acEmp:4 },
-  "Lepo Lepo":  { pts:283, exBra:2, exGeral:12, acVenc:60, acEmp:2 },
-  "Georges":    { pts:277, exBra:1, exGeral:12, acVenc:62, acEmp:3 },
-  "Renato":     { pts:272, exBra:2, exGeral:13, acVenc:57, acEmp:3 },
-  "Samuel":     { pts:272, exBra:0, exGeral:11, acVenc:61, acEmp:2 },
-  "Cabral":     { pts:270, exBra:2, exGeral:9,  acVenc:63, acEmp:2 },
-  "Marcos":     { pts:270, exBra:0, exGeral:10, acVenc:60, acEmp:2 },
-  "Biriba":     { pts:262, exBra:1, exGeral:11, acVenc:56, acEmp:3 },
-  "Dedé":       { pts:257, exBra:1, exGeral:8,  acVenc:58, acEmp:0 },
-  "Aurélio":    { pts:245, exBra:1, exGeral:7,  acVenc:53, acEmp:1 },
-  "Adones":     { pts:211, exBra:0, exGeral:5,  acVenc:48, acEmp:3 },
+  "Moeção":     { pts:324, exBra:1, exGeral:15, acVenc:66, acEmp:3 },
+  "Cantarelli": { pts:320, exBra:2, exGeral:17, acVenc:63, acEmp:4 },
+  "Lepo Lepo":  { pts:317, exBra:2, exGeral:15, acVenc:64, acEmp:2 },
+  "Soneca":     { pts:311, exBra:2, exGeral:17, acVenc:62, acEmp:4 },
+  "Georges":    { pts:309, exBra:1, exGeral:14, acVenc:66, acEmp:3 },
+  "Cabral":     { pts:294, exBra:2, exGeral:10, acVenc:67, acEmp:2 },
+  "Biriba":     { pts:290, exBra:1, exGeral:12, acVenc:60, acEmp:3 },
+  "Dedé":       { pts:287, exBra:1, exGeral:10, acVenc:62, acEmp:0 },
+  "Renato":     { pts:286, exBra:2, exGeral:13, acVenc:60, acEmp:3 },
+  "Marcos":     { pts:284, exBra:0, exGeral:10, acVenc:63, acEmp:2 },
+  "Samuel":     { pts:280, exBra:0, exGeral:11, acVenc:63, acEmp:2 },
+  "Aurélio":    { pts:259, exBra:1, exGeral:7,  acVenc:55, acEmp:1 },
+  "Adones":     { pts:221, exBra:0, exGeral:5,  acVenc:49, acEmp:3 },
 };
 // =================================================================
 
@@ -250,12 +250,8 @@ const SALDO_INICIAL = {
 // FASE ELIMINATÓRIA: todos os jogos valem pontos em DOBRO (bonus:true).
 // Critérios de desempate seguem contando pelo valor base, conforme a regra.
 const MATCHES = [
-  { id:"qf1", round:"QUARTAS · JOGO 1", a:"FRANÇA", b:"MARROCOS",     fa:"fr", fb:"ma", ea:"🇫🇷", eb:"🇲🇦", bonus:true, kickoff:"2026-07-09T17:00:00-03:00" },
-  { id:"qf2", round:"QUARTAS · JOGO 2", a:"ESPANHA", b:"BÉLGICA",     fa:"es", fb:"be", ea:"🇪🇸", eb:"🇧🇪", bonus:true, kickoff:"2026-07-10T16:00:00-03:00" },
-  { id:"qf3", round:"QUARTAS · JOGO 3", a:"NORUEGA", b:"INGLATERRA",  fa:"no", fb:"gb-eng", ea:"🇳🇴", eb:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", bonus:true, kickoff:"2026-07-11T18:00:00-03:00" },
-  { id:"qf4", round:"QUARTAS · JOGO 4", a:"ARGENTINA", b:"SUÍÇA",     fa:"ar", fb:"ch", ea:"🇦🇷", eb:"🇨🇭", bonus:true, kickoff:"2026-07-11T22:00:00-03:00" },
-  { id:"sf1", round:"SEMIFINAL · JOGO 1", a:"A DEFINIR", b:"A DEFINIR", fa:"tbd", fb:"tbd", ea:"❓", eb:"❓", bonus:true, kickoff:"2026-07-14T16:00:00-03:00" },
-  { id:"sf2", round:"SEMIFINAL · JOGO 2", a:"A DEFINIR", b:"A DEFINIR", fa:"tbd", fb:"tbd", ea:"❓", eb:"❓", bonus:true, kickoff:"2026-07-15T16:00:00-03:00" },
+  { id:"sf1", round:"SEMIFINAL · JOGO 1", a:"FRANÇA", b:"ESPANHA", fa:"fr", fb:"es", ea:"🇫🇷", eb:"🇪🇸", bonus:true, kickoff:"2026-07-14T16:00:00-03:00" },
+  { id:"sf2", round:"SEMIFINAL · JOGO 2", a:"ARGENTINA", b:"INGLATERRA", fa:"ar", fb:"gb-eng", ea:"🇦🇷", eb:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", bonus:true, kickoff:"2026-07-15T16:00:00-03:00" },
   { id:"tp3", round:"DISPUTA DE 3º LUGAR", a:"A DEFINIR", b:"A DEFINIR", fa:"tbd", fb:"tbd", ea:"❓", eb:"❓", bonus:true, kickoff:"2026-07-18T17:00:00-03:00" },
   { id:"fin", round:"🏆 GRANDE FINAL", a:"A DEFINIR", b:"A DEFINIR",   fa:"tbd", fb:"tbd", ea:"❓", eb:"❓", bonus:true, kickoff:"2026-07-19T16:00:00-03:00" },
 ];
